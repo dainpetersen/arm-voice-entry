@@ -7,14 +7,18 @@
 }
 
 :root {
-  --green-50: #f0fdf4;
-  --green-100: #dcfce7;
-  --green-200: #bbf7d0;
-  --green-500: #22c55e;
-  --green-600: #16a34a;
-  --green-700: #15803d;
-  --green-800: #166534;
-  --green-900: #14532d;
+  /* Cropwise brand greens */
+  --green-50: #f0f9f1;
+  --green-100: #d9f0db;
+  --green-200: #a8dead;
+  --green-500: #2d8f38;
+  --green-600: #237a2d;
+  --green-700: #1a6522;
+  --green-800: #145019;
+  --green-900: #0e3b12;
+
+  /* Cropwise black for headers/accents */
+  --brand-black: #1a1a1a;
 
   --red-100: #fee2e2;
   --red-500: #ef4444;
@@ -71,7 +75,7 @@ input, select {
 input:focus, select:focus {
   outline: none;
   border-color: var(--green-600);
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 0 0 3px rgba(35, 122, 45, 0.15);
 }
 
 .container {
@@ -163,6 +167,37 @@ input:focus, select:focus {
   margin-top: 4px;
 }
 
+/* Brand header (home page) */
+.brand-header {
+  text-align: center;
+  padding: 24px 0 20px;
+  margin-bottom: 20px;
+}
+
+.brand-title {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.brand-green {
+  color: var(--green-600);
+}
+
+.brand-black {
+  color: var(--brand-black);
+}
+
+.brand-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
 /* Header */
 .header {
   display: flex;
@@ -174,7 +209,7 @@ input:focus, select:focus {
 
 .header h1 {
   font-size: 24px;
-  color: var(--green-800);
+  color: var(--brand-black);
 }
 
 .header-back {
@@ -217,7 +252,7 @@ input:focus, select:focus {
 .recording-plot-number {
   font-size: 64px;
   font-weight: 800;
-  color: var(--green-700);
+  color: var(--green-600);
   line-height: 1;
 }
 
@@ -261,7 +296,7 @@ input:focus, select:focus {
   justify-content: center;
   margin: 24px auto;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+  box-shadow: 0 4px 12px rgba(35, 122, 45, 0.3);
 }
 
 .mic-button:hover {

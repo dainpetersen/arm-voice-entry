@@ -9,11 +9,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'ARM Voice Entry',
-        short_name: 'ARM Voice',
+        name: 'Cropwise Voice Entry',
+        short_name: 'Cropwise Voice',
         description: 'Voice-to-text data entry for ARM agricultural research trials',
-        theme_color: '#16a34a',
-        background_color: '#f0fdf4',
+        theme_color: '#237a2d',
+        background_color: '#f0f9f1',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

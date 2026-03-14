@@ -12,8 +12,11 @@ export function HomePage({ configs, sessions, deleteConfig }: HomePageProps) {
 
   return (
     <>
-      <div className="header">
-        <h1>ARM Voice Entry</h1>
+      <div className="brand-header">
+        <h1 className="brand-title">
+          <span className="brand-green">CROP</span><span className="brand-black">WISE</span>
+        </h1>
+        <p className="brand-subtitle">Voice Entry</p>
       </div>
 
       <button className="btn btn-primary" onClick={() => navigate('/setup')} style={{ marginBottom: 24 }}>
