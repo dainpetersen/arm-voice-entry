@@ -98,6 +98,8 @@ export function useSpeechRecognition(
   const [error, setError] = useState<string | null>(null)
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const onResultRef = useRef(onResult)
+  const interimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastCommittedRef = useRef<string>('')
 
   onResultRef.current = onResult
 
@@ -129,11 +131,27 @@ export function useSpeechRecognition(
         }
       }
 
+      // Clear any pending interim timeout
+      if (interimTimeoutRef.current) {
+        clearTimeout(interimTimeoutRef.current)
+        interimTimeoutRef.current = null
+      }
+
       if (finalTranscript) {
+        lastCommittedRef.current = finalTranscript
         setTranscript(finalTranscript)
         onResultRef.current(finalTranscript)
       } else if (interimTranscript) {
         setTranscript(interimTranscript)
+        // Auto-commit interim results after 1.5s if they never become final
+        // This handles the common case where short utterances get stuck
+        interimTimeoutRef.current = setTimeout(() => {
+          if (interimTranscript && interimTranscript !== lastCommittedRef.current) {
+            lastCommittedRef.current = interimTranscript
+            onResultRef.current(interimTranscript)
+          }
+          interimTimeoutRef.current = null
+        }, 1500)
       }
     }
 
@@ -162,6 +180,10 @@ export function useSpeechRecognition(
   }, [])
 
   const stopListening = useCallback(() => {
+    if (interimTimeoutRef.current) {
+      clearTimeout(interimTimeoutRef.current)
+      interimTimeoutRef.current = null
+    }
     if (recognitionRef.current) {
       const rec = recognitionRef.current
       recognitionRef.current = null
@@ -172,10 +194,14 @@ export function useSpeechRecognition(
 
   const clearTranscript = useCallback(() => {
     setTranscript('')
+    lastCommittedRef.current = ''
   }, [])
 
   useEffect(() => {
     return () => {
+      if (interimTimeoutRef.current) {
+        clearTimeout(interimTimeoutRef.current)
+      }
       if (recognitionRef.current) {
         recognitionRef.current.abort()
         recognitionRef.current = null
