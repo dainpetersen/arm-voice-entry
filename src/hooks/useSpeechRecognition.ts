@@ -86,6 +86,7 @@ export interface UseSpeechRecognitionReturn {
   transcript: string
   startListening: () => void
   stopListening: () => void
+  clearTranscript: () => void
   error: string | null
 }
 
@@ -169,6 +170,10 @@ export function useSpeechRecognition(
     setIsListening(false)
   }, [])
 
+  const clearTranscript = useCallback(() => {
+    setTranscript('')
+  }, [])
+
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
@@ -178,5 +183,5 @@ export function useSpeechRecognition(
     }
   }, [])
 
-  return { isListening, isSupported, transcript, startListening, stopListening, error }
+  return { isListening, isSupported, transcript, startListening, stopListening, clearTranscript, error }
 }

@@ -80,6 +80,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
   const prevVarIndexRef = useRef<number>(session?.currentVariableIndex ?? 0)
   const prevPlotIndexRef = useRef<number>(session?.currentPlotIndex ?? 0)
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const clearTranscriptRef = useRef<() => void>(() => {})
   const sessionRef = useRef(session)
   sessionRef.current = session
 
@@ -218,6 +219,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
 
     playBeep()
     setLastRecognized('')
+    clearTranscriptRef.current()
   }, [config, advanceToNext])
 
   const recordValue = useCallback((value: number | null) => {
@@ -325,7 +327,8 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
     recordValue(parsed)
   }, [recordValue, goBack])
 
-  const { isListening, isSupported, transcript, startListening, stopListening, error } = useSpeechRecognition(handleSpeechResult)
+  const { isListening, isSupported, transcript, startListening, stopListening, clearTranscript, error } = useSpeechRecognition(handleSpeechResult)
+  clearTranscriptRef.current = clearTranscript
 
   const handleKeypadPress = (key: string) => {
     if (key === 'C') {
