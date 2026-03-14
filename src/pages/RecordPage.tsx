@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { TrialConfig, TrialSession, PlotData, PlotNote } from '../types'
 import { getPlotOrder, getTotalPlots } from '../types'
 import { useSpeechRecognition, parseSpokenNumber } from '../hooks/useSpeechRecognition'
-import { playBeep, playError } from '../utils/audio'
+import { playBeep, playError, playWarning, playVariableComplete } from '../utils/audio'
 
 interface RecordPageProps {
   configs: TrialConfig[]
@@ -75,6 +75,9 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [isRecordingNote, setIsRecordingNote] = useState(false)
+  const [variableAlert, setVariableAlert] = useState<{ varName: string; missing: number; total: number } | null>(null)
+  const prevVarIndexRef = useRef<number>(session?.currentVariableIndex ?? 0)
+  const prevPlotIndexRef = useRef<number>(session?.currentPlotIndex ?? 0)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const sessionRef = useRef(session)
   sessionRef.current = session
@@ -87,6 +90,48 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
     }, 5000)
     return () => clearInterval(interval)
   }, [session, onSaveSession])
+
+  // Detect variable transitions for completion alerts
+  useEffect(() => {
+    if (!config || !session) return
+    const prevVarIdx = prevVarIndexRef.current
+    const prevPlotIdx = prevPlotIndexRef.current
+    const curVarIdx = session.currentVariableIndex
+    const curPlotIdx = session.currentPlotIndex
+
+    // Variable changed (either advanced to next var, or wrapped to next plot)
+    const varChanged = curVarIdx !== prevVarIdx || (curPlotIdx !== prevPlotIdx && curVarIdx === 0 && prevVarIdx === config.variables.length - 1)
+
+    if (varChanged && (prevVarIdx !== curVarIdx || curPlotIdx > prevPlotIdx)) {
+      const completedVar = config.variables[prevVarIdx]
+      if (completedVar) {
+        // Check for missing data in this variable across ALL plots visited so far
+        const plotsToCheck = curPlotIdx === 0 && curVarIdx === 0
+          ? session.data.length // trial complete or wrapped
+          : prevPlotIdx + 1 // plots up to and including the one we just finished
+        let missing = 0
+        const total = plotsToCheck * completedVar.subSamples
+        for (let p = 0; p < plotsToCheck; p++) {
+          const readings = session.data[p]?.readings[completedVar.id] ?? []
+          for (const r of readings) {
+            if (r === null) missing++
+          }
+        }
+
+        setVariableAlert({ varName: completedVar.name, missing, total })
+        if (missing === 0) {
+          playVariableComplete()
+        } else {
+          playWarning()
+        }
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => setVariableAlert(null), 3000)
+      }
+    }
+
+    prevVarIndexRef.current = curVarIdx
+    prevPlotIndexRef.current = curPlotIdx
+  }, [config, session?.currentVariableIndex, session?.currentPlotIndex, session])
 
   const currentVariable = config?.variables[session?.currentVariableIndex]
   const currentPlot = session?.data[session?.currentPlotIndex]
@@ -338,6 +383,16 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
         <span>{totalReadingsCompleted} / {grandTotal} readings</span>
       </div>
 
+      {/* Variable completion alert banner */}
+      {variableAlert && (
+        <div className={`variable-alert ${variableAlert.missing === 0 ? 'variable-alert-success' : 'variable-alert-warning'}`}>
+          {variableAlert.missing === 0
+            ? `✓ ${variableAlert.varName} complete — no missing data`
+            : `⚠ ${variableAlert.varName}: ${variableAlert.missing} of ${variableAlert.total} readings missing`
+          }
+        </div>
+      )}
+
       {/* Current reading display */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="recording-current">
@@ -361,6 +416,43 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
             }
           </div>
         </div>
+
+        {/* Progress grid */}
+        {currentVariable && (
+          <div className="progress-grid-section">
+            <div className="progress-grid-label">
+              {currentVariable.name} — all plots
+            </div>
+            <div className="progress-grid">
+              {session.data.map((plot, plotIdx) => {
+                const readings = plot.readings[currentVariable.id] ?? []
+                const allFilled = readings.every(r => r !== null)
+                const someFilled = readings.some(r => r !== null)
+                const isCurrent = plotIdx === session.currentPlotIndex
+                const isPast = plotIdx < session.currentPlotIndex
+
+                let cellClass = 'progress-cell'
+                if (isCurrent) cellClass += ' progress-cell-current'
+                else if (allFilled) cellClass += ' progress-cell-complete'
+                else if (isPast && !allFilled) cellClass += ' progress-cell-missing'
+                else if (someFilled) cellClass += ' progress-cell-partial'
+
+                // Show the first reading value if available
+                const firstReading = readings[0]
+                const displayVal = firstReading != null
+                  ? (firstReading % 1 === 0 ? firstReading.toString() : firstReading.toFixed(1))
+                  : ''
+
+                return (
+                  <div key={plotIdx} className={cellClass} title={`Plot ${plot.plotNumber}`}>
+                    <span className="progress-cell-plot">{plot.plotNumber}</span>
+                    {displayVal && <span className="progress-cell-value">{displayVal}</span>}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input mode tabs */}

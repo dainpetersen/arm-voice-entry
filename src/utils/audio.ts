@@ -31,6 +31,19 @@ export function playError(): void {
   playBeep(300, 200)
 }
 
+/** Play a warning sound (two descending tones) */
+export function playWarning(): void {
+  playBeep(600, 120)
+  setTimeout(() => playBeep(400, 120), 150)
+}
+
+/** Play a variable-complete celebration (ascending triple beep) */
+export function playVariableComplete(): void {
+  playBeep(800, 80)
+  setTimeout(() => playBeep(1000, 80), 100)
+  setTimeout(() => playBeep(1200, 120), 200)
+}
+
 /** Speak text aloud using speech synthesis */
 export function speak(text: string): void {
   if ('speechSynthesis' in window) {
