@@ -3,11 +3,33 @@ export interface AssessmentVariable {
   name: string
   unit: string
   subSamples: number // how many readings per plot for this variable
+  min?: number | null  // optional expected minimum value
+  max?: number | null  // optional expected maximum value
 }
+
+export const CROP_TYPES = [
+  'Corn',
+  'Soybean',
+  'Wheat',
+  'Cotton',
+  'Rice',
+  'Sorghum',
+  'Barley',
+  'Oats',
+  'Canola',
+  'Sunflower',
+  'Alfalfa',
+  'Peanut',
+  'Tobacco',
+  'Sugar Beet',
+  'Potato',
+  'Other',
+] as const
 
 export interface TrialConfig {
   id: string
   name: string
+  cropType?: string
   treatments: number  // columns
   replications: number  // rows
   serpentine: boolean

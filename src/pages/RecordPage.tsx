@@ -76,6 +76,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
   const [noteText, setNoteText] = useState('')
   const [isRecordingNote, setIsRecordingNote] = useState(false)
   const [variableAlert, setVariableAlert] = useState<{ varName: string; missing: number; total: number } | null>(null)
+  const [pendingValue, setPendingValue] = useState<{ value: number; varName: string; min?: number | null; max?: number | null } | null>(null)
   const prevVarIndexRef = useRef<number>(session?.currentVariableIndex ?? 0)
   const prevPlotIndexRef = useRef<number>(session?.currentPlotIndex ?? 0)
   const photoInputRef = useRef<HTMLInputElement>(null)
@@ -190,7 +191,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
     })
   }, [config])
 
-  const recordValue = useCallback((value: number | null) => {
+  const commitValue = useCallback((value: number | null) => {
     if (!config || !currentVariable) return
 
     setSession(prev => {
@@ -213,6 +214,23 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
 
     playBeep()
   }, [config, currentVariable, advanceToNext])
+
+  const recordValue = useCallback((value: number | null) => {
+    if (!config || !currentVariable) return
+
+    // Check range validation for non-null values
+    if (value !== null) {
+      const { min, max } = currentVariable
+      const outOfRange = (min != null && value < min) || (max != null && value > max)
+      if (outOfRange) {
+        playWarning()
+        setPendingValue({ value, varName: currentVariable.name, min, max })
+        return
+      }
+    }
+
+    commitValue(value)
+  }, [config, currentVariable, commitValue])
 
   // --- Note functions ---
   const addNoteToCurrentPlot = useCallback((text: string) => {
@@ -677,6 +695,41 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Range validation confirmation */}
+      {pendingValue && (
+        <div className="modal-overlay" onClick={() => setPendingValue(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 48, marginBottom: 8 }}>&#9888;</div>
+            <h3 style={{ fontSize: 18, marginBottom: 8 }}>Out of Range</h3>
+            <p style={{ fontSize: 16, color: 'var(--gray-600)', marginBottom: 4 }}>
+              <strong>{pendingValue.value}</strong> is outside the expected range for {pendingValue.varName}
+            </p>
+            <p style={{ fontSize: 14, color: 'var(--gray-500)', marginBottom: 20 }}>
+              Expected: {pendingValue.min ?? '—'} to {pendingValue.max ?? '—'}
+            </p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setPendingValue(null)}
+                style={{ flex: 1 }}
+              >
+                Reject
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  commitValue(pendingValue.value)
+                  setPendingValue(null)
+                }}
+                style={{ flex: 1 }}
+              >
+                Accept {pendingValue.value}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { TrialConfig, AssessmentVariable } from '../types'
+import { CROP_TYPES } from '../types'
 
 interface SetupPageProps {
   configs?: TrialConfig[]
@@ -14,6 +15,8 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
   const existingConfig = configs?.find(c => c.id === id)
 
   const [name, setName] = useState(existingConfig?.name ?? '')
+  const [cropType, setCropType] = useState(existingConfig?.cropType ?? '')
+  const [customCropType, setCustomCropType] = useState('')
   const [treatments, setTreatments] = useState(existingConfig?.treatments?.toString() ?? '')
   const [replications, setReplications] = useState(existingConfig?.replications?.toString() ?? '')
   const [serpentine, setSerpentine] = useState(existingConfig?.serpentine ?? true)
@@ -23,10 +26,13 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
   const [varName, setVarName] = useState('')
   const [varUnit, setVarUnit] = useState('')
   const [varSubSamples, setVarSubSamples] = useState('1')
+  const [varMin, setVarMin] = useState('')
+  const [varMax, setVarMax] = useState('')
 
   useEffect(() => {
     if (existingConfig) {
       setName(existingConfig.name)
+      setCropType(existingConfig.cropType ?? '')
       setTreatments(existingConfig.treatments.toString())
       setReplications(existingConfig.replications.toString())
       setSerpentine(existingConfig.serpentine)
@@ -36,16 +42,22 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
 
   const addVariable = () => {
     if (!varName.trim()) return
+    const parsedMin = varMin.trim() ? parseFloat(varMin) : null
+    const parsedMax = varMax.trim() ? parseFloat(varMax) : null
     const newVar: AssessmentVariable = {
       id: crypto.randomUUID(),
       name: varName.trim(),
       unit: varUnit.trim(),
       subSamples: Math.max(1, parseInt(varSubSamples) || 1),
+      min: parsedMin != null && !isNaN(parsedMin) ? parsedMin : null,
+      max: parsedMax != null && !isNaN(parsedMax) ? parsedMax : null,
     }
     setVariables([...variables, newVar])
     setVarName('')
     setVarUnit('')
     setVarSubSamples('1')
+    setVarMin('')
+    setVarMax('')
   }
 
   const removeVariable = (varId: string) => {
@@ -59,9 +71,11 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
   const handleSave = () => {
     if (!name.trim() || numTreatments <= 0 || numReplications <= 0 || variables.length === 0) return
 
+    const resolvedCropType = cropType === 'Other' ? customCropType.trim() : cropType
     const config: TrialConfig = {
       id: existingConfig?.id ?? crypto.randomUUID(),
       name: name.trim(),
+      cropType: resolvedCropType || undefined,
       treatments: numTreatments,
       replications: numReplications,
       serpentine,
@@ -93,6 +107,29 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
             onChange={e => setName(e.target.value)}
             placeholder="e.g., Corn Fungicide 2025"
           />
+        </div>
+
+        <div className="field">
+          <label>Crop Type</label>
+          <select
+            value={cropType}
+            onChange={e => { setCropType(e.target.value); if (e.target.value !== 'Other') setCustomCropType('') }}
+            style={{ fontSize: 16 }}
+          >
+            <option value="">Select crop (optional)</option>
+            {CROP_TYPES.map(ct => (
+              <option key={ct} value={ct}>{ct}</option>
+            ))}
+          </select>
+          {cropType === 'Other' && (
+            <input
+              type="text"
+              value={customCropType}
+              onChange={e => setCustomCropType(e.target.value)}
+              placeholder="Enter crop type"
+              style={{ marginTop: 8 }}
+            />
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 12 }}>
@@ -161,6 +198,9 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
               <div className="variable-item-detail">
                 {v.subSamples} reading{v.subSamples !== 1 ? 's' : ''} per plot
                 {v.unit && ` · ${v.unit}`}
+                {(v.min != null || v.max != null) && (
+                  <span> · range: {v.min ?? '—'} to {v.max ?? '—'}</span>
+                )}
               </div>
             </div>
             <button className="variable-item-remove" onClick={() => removeVariable(v.id)}>
@@ -207,6 +247,30 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
                 min="1"
               />
               <div className="field-hint">Sub-samples per plot</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Min (optional)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={varMin}
+                onChange={e => setVarMin(e.target.value)}
+                placeholder="e.g., 0"
+              />
+              <div className="field-hint">Expected minimum</div>
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Max (optional)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={varMax}
+                onChange={e => setVarMax(e.target.value)}
+                placeholder="e.g., 300"
+              />
+              <div className="field-hint">Expected maximum</div>
             </div>
           </div>
           <button
