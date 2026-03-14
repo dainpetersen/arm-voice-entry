@@ -393,66 +393,93 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
         </div>
       )}
 
-      {/* Current reading display */}
-      <div className="card" style={{ marginBottom: 16 }}>
-        <div className="recording-current">
-          <div style={{ fontSize: 13, color: 'var(--gray-400)', textTransform: 'uppercase', letterSpacing: 1 }}>Plot</div>
-          <div className="recording-plot-number">{currentPlot?.plotNumber}</div>
-          <div className="recording-variable">
+      {/* Padlock-style recording display */}
+      <div className="card" style={{ marginBottom: 16, padding: 0, overflow: 'hidden' }}>
+        {/* Header row: current variable info + plot indicator */}
+        <div className="padlock-header">
+          <div className="padlock-variable">
             {currentVariable?.name}
-            {currentVariable?.unit && <span style={{ fontSize: 16, color: 'var(--gray-400)' }}> ({currentVariable.unit})</span>}
+            {currentVariable?.unit && <span className="padlock-unit"> ({currentVariable.unit})</span>}
+            {currentVariable && currentVariable.subSamples > 1 && (
+              <span className="padlock-subsample"> #{session.currentSubSampleIndex + 1}/{currentVariable.subSamples}</span>
+            )}
           </div>
-          {currentVariable && currentVariable.subSamples > 1 && (
-            <div className="recording-subsample">
-              Reading {session.currentSubSampleIndex + 1} of {currentVariable.subSamples}
-            </div>
-          )}
-
-          {/* Show current value being entered */}
-          <div className={`recording-value ${inputMode === 'voice' && !lastRecognized ? 'interim' : ''}`}>
-            {inputMode === 'voice'
-              ? (transcript || lastRecognized || 'Listening...')
-              : (keypadValue || '—')
-            }
-          </div>
+          <div className="padlock-plot-badge">Plot {currentPlot?.plotNumber}</div>
         </div>
 
-        {/* Progress grid */}
-        {currentVariable && (
-          <div className="progress-grid-section">
-            <div className="progress-grid-label">
-              {currentVariable.name} — all plots
-            </div>
-            <div className="progress-grid">
-              {session.data.map((plot, plotIdx) => {
-                const readings = plot.readings[currentVariable.id] ?? []
-                const allFilled = readings.every(r => r !== null)
-                const someFilled = readings.some(r => r !== null)
-                const isCurrent = plotIdx === session.currentPlotIndex
-                const isPast = plotIdx < session.currentPlotIndex
+        {/* Column headers */}
+        {(() => {
+          const columns: { varId: string; varName: string; subIdx: number; label: string }[] = []
+          for (const v of config.variables) {
+            for (let s = 0; s < v.subSamples; s++) {
+              columns.push({
+                varId: v.id,
+                varName: v.name,
+                subIdx: s,
+                label: v.subSamples > 1 ? `${v.name} ${s + 1}` : v.name,
+              })
+            }
+          }
+          // Flat index of current reading
+          const currentFlatIdx = config.variables.slice(0, session.currentVariableIndex).reduce((sum, v) => sum + v.subSamples, 0) + session.currentSubSampleIndex
 
-                let cellClass = 'progress-cell'
-                if (isCurrent) cellClass += ' progress-cell-current'
-                else if (allFilled) cellClass += ' progress-cell-complete'
-                else if (isPast && !allFilled) cellClass += ' progress-cell-missing'
-                else if (someFilled) cellClass += ' progress-cell-partial'
+          // Which rows to show: prev, current, next
+          const rowIndices: number[] = []
+          if (session.currentPlotIndex > 0) rowIndices.push(session.currentPlotIndex - 1)
+          rowIndices.push(session.currentPlotIndex)
+          if (session.currentPlotIndex < session.data.length - 1) rowIndices.push(session.currentPlotIndex + 1)
 
-                // Show the first reading value if available
-                const firstReading = readings[0]
-                const displayVal = firstReading != null
-                  ? (firstReading % 1 === 0 ? firstReading.toString() : firstReading.toFixed(1))
-                  : ''
+          return (
+            <div className="padlock-container">
+              {/* Column headers */}
+              <div className="padlock-row padlock-row-header">
+                <div className="padlock-plot-cell padlock-header-cell">#</div>
+                {columns.map((col, ci) => (
+                  <div key={ci} className={`padlock-data-cell padlock-header-cell ${ci === currentFlatIdx ? 'padlock-col-active' : ''}`}>
+                    {col.label}
+                  </div>
+                ))}
+              </div>
 
+              {/* Data rows */}
+              {rowIndices.map(rowIdx => {
+                const plot = session.data[rowIdx]
+                if (!plot) return null
+                const isCurrent = rowIdx === session.currentPlotIndex
                 return (
-                  <div key={plotIdx} className={cellClass} title={`Plot ${plot.plotNumber}`}>
-                    <span className="progress-cell-plot">{plot.plotNumber}</span>
-                    {displayVal && <span className="progress-cell-value">{displayVal}</span>}
+                  <div key={rowIdx} className={`padlock-row ${isCurrent ? 'padlock-row-current' : 'padlock-row-dim'}`}>
+                    <div className="padlock-plot-cell">{plot.plotNumber}</div>
+                    {columns.map((col, ci) => {
+                      const reading = plot.readings[col.varId]?.[col.subIdx]
+                      const isActiveCell = isCurrent && ci === currentFlatIdx
+                      const displayVal = reading != null
+                        ? (reading % 1 === 0 ? reading.toString() : reading.toFixed(1))
+                        : ''
+
+                      return (
+                        <div
+                          key={ci}
+                          className={`padlock-data-cell ${isActiveCell ? 'padlock-cell-active' : ''} ${!isCurrent ? '' : reading != null ? 'padlock-cell-filled' : ci < currentFlatIdx ? 'padlock-cell-skipped' : ''}`}
+                        >
+                          {isActiveCell ? (
+                            <span className="padlock-cell-input">
+                              {inputMode === 'voice'
+                                ? (transcript || lastRecognized || '...')
+                                : (keypadValue || '...')
+                              }
+                            </span>
+                          ) : (
+                            displayVal || (reading === null && !isCurrent ? '' : <span className="padlock-cell-empty">—</span>)
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )
               })}
             </div>
-          </div>
-        )}
+          )
+        })()}
       </div>
 
       {/* Input mode tabs */}
