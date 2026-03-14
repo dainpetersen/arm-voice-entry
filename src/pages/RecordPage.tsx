@@ -192,16 +192,20 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
   }, [config])
 
   const commitValue = useCallback((value: number | null) => {
-    if (!config || !currentVariable) return
+    if (!config) return
 
     setSession(prev => {
+      // Derive variable from prev state to avoid stale closures
+      const curVar = config.variables[prev.currentVariableIndex]
+      if (!curVar) return prev
+
       const newData = prev.data.map((p, i) => {
         if (i !== prev.currentPlotIndex) return p
         return {
           ...p,
           readings: {
             ...p.readings,
-            [currentVariable.id]: p.readings[currentVariable.id]!.map((v, j) =>
+            [curVar.id]: p.readings[curVar.id]!.map((v, j) =>
               j === prev.currentSubSampleIndex ? value : v
             ),
           },
@@ -213,24 +217,28 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
     })
 
     playBeep()
-  }, [config, currentVariable, advanceToNext])
+  }, [config, advanceToNext])
 
   const recordValue = useCallback((value: number | null) => {
-    if (!config || !currentVariable) return
+    if (!config) return
+    // Use sessionRef for latest state to avoid stale closure on rapid input
+    const sess = sessionRef.current
+    const curVar = config.variables[sess.currentVariableIndex]
+    if (!curVar) return
 
     // Check range validation for non-null values
     if (value !== null) {
-      const { min, max } = currentVariable
+      const { min, max } = curVar
       const outOfRange = (min != null && value < min) || (max != null && value > max)
       if (outOfRange) {
         playWarning()
-        setPendingValue({ value, varName: currentVariable.name, min, max })
+        setPendingValue({ value, varName: curVar.name, min, max })
         return
       }
     }
 
     commitValue(value)
-  }, [config, currentVariable, commitValue])
+  }, [config, commitValue])
 
   // --- Note functions ---
   const addNoteToCurrentPlot = useCallback((text: string) => {
