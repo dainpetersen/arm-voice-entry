@@ -30,35 +30,35 @@ export function App() {
 
   return (
     <ErrorBoundary>
-    <AuthGate>
-    <div className="container">
-      <Routes>
-        <Route path="/" element={<HomePage {...storage} syncStatus={syncStatus} />} />
-        <Route path="/setup" element={<SetupPage onSave={storage.saveConfig} />} />
-        <Route path="/setup/:id" element={<SetupPage configs={storage.configs} onSave={storage.saveConfig} />} />
-        <Route
-          path="/record/:id"
-          element={
-            <RecordPage
-              configs={storage.configs}
-              sessions={storage.sessions}
-              onSaveSession={storage.saveSession}
+      <AuthGate>
+        <div className="container">
+          <Routes>
+            <Route path="/" element={<HomePage {...storage} syncStatus={syncStatus} />} />
+            <Route path="/setup" element={<SetupPage onSave={storage.saveConfig} />} />
+            <Route path="/setup/:id" element={<SetupPage configs={storage.configs} onSave={storage.saveConfig} />} />
+            <Route
+              path="/record/:id"
+              element={
+                <RecordPage
+                  configs={storage.configs}
+                  sessions={storage.sessions}
+                  onSaveSession={storage.saveSession}
+                />
+              }
             />
-          }
-        />
-        <Route
-          path="/review/:id/:startedAt"
-          element={
-            <ReviewPage
-              sessions={storage.sessions}
-              onDeleteSession={storage.deleteSession}
+            <Route
+              path="/review/:id/:startedAt"
+              element={
+                <ReviewPage
+                  sessions={storage.sessions}
+                  onDeleteSession={storage.deleteSession}
+                />
+              }
             />
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </div>
-    </AuthGate>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </AuthGate>
     </ErrorBoundary>
   )
 }
