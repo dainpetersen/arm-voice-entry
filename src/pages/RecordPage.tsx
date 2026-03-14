@@ -71,7 +71,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
 
   const [inputMode, setInputMode] = useState<InputMode>('voice')
   const [keypadValue, setKeypadValue] = useState('')
-  const [lastRecognized, setLastRecognized] = useState('')
+  const [, setLastRecognized] = useState('')
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [isRecordingNote, setIsRecordingNote] = useState(false)
@@ -217,6 +217,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
     })
 
     playBeep()
+    setLastRecognized('')
   }, [config, advanceToNext])
 
   const recordValue = useCallback((value: number | null) => {
@@ -479,7 +480,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
                         const reading = plot.readings[col.varId]?.[col.subIdx]
                         const isActiveCell = isCurrent && ci === currentFlatIdx
                         const displayVal = reading != null
-                          ? (reading % 1 === 0 ? reading.toString() : reading.toFixed(1))
+                          ? (reading % 1 === 0 ? reading.toString() : reading.toFixed(2))
                           : ''
 
                         return (
@@ -490,7 +491,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
                             {isActiveCell ? (
                               <span className="padlock-cell-input">
                                 {inputMode === 'voice'
-                                  ? (transcript || lastRecognized || '...')
+                                  ? (transcript || '...')
                                   : (keypadValue || '...')
                                 }
                               </span>
