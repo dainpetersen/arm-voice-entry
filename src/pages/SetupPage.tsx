@@ -211,7 +211,7 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
 
         {variables.length === 0 && (
           <p style={{ color: 'var(--gray-400)', fontSize: 14, marginBottom: 16 }}>
-            Add at least one assessment variable
+            Create at least one assessment variable
           </p>
         )}
 
@@ -274,11 +274,11 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
             </div>
           </div>
           <button
-            className="btn btn-secondary btn-sm"
+            className={`btn ${variables.length === 0 ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={addVariable}
             disabled={!varName.trim()}
           >
-            + Add Variable
+            {variables.length === 0 ? 'Create Variable' : '+ Add Another Variable'}
           </button>
         </div>
       </div>
