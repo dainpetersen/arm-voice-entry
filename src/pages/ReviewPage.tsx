@@ -49,7 +49,7 @@ export function ReviewPage({ sessions, onDeleteSession }: ReviewPageProps) {
       <div className="card" style={{ marginBottom: 16 }}>
         <h2 style={{ fontSize: 20, marginBottom: 4 }}>{config.name}</h2>
         <p style={{ fontSize: 14, color: 'var(--gray-500)' }}>
-          {filledPlots} of {config.totalPlots} plots recorded
+          {filledPlots} of {config.treatments * config.replications} plots recorded
           {' '}&middot;{' '}
           {new Date(session.startedAt).toLocaleDateString()}
           {session.completedAt ? ' · Complete' : ' · In Progress'}

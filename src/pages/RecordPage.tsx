@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { TrialConfig, TrialSession, PlotData } from '../types'
-import { getPlotOrder } from '../types'
+import { getPlotOrder, getTotalPlots } from '../types'
 import { useSpeechRecognition, parseSpokenNumber } from '../hooks/useSpeechRecognition'
 import { playBeep, playError } from '../utils/audio'
 
@@ -66,7 +66,8 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
   const totalReadings = config?.variables.reduce((sum, v) => sum + v.subSamples, 0) ?? 0
   const currentReadingInPlot = (config?.variables.slice(0, session?.currentVariableIndex).reduce((sum, v) => sum + v.subSamples, 0) ?? 0) + (session?.currentSubSampleIndex ?? 0)
   const totalReadingsCompleted = (session?.currentPlotIndex ?? 0) * totalReadings + currentReadingInPlot
-  const grandTotal = (config?.totalPlots ?? 0) * totalReadings
+  const totalPlots = config ? getTotalPlots(config) : 0
+  const grandTotal = totalPlots * totalReadings
 
   const advanceToNext = useCallback((sess: TrialSession): TrialSession => {
     if (!config) return sess
@@ -86,7 +87,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
     }
 
     // Advance plot
-    if (currentPlotIndex < config.totalPlots - 1) {
+    if (currentPlotIndex < getTotalPlots(config) - 1) {
       return { ...sess, currentPlotIndex: currentPlotIndex + 1, currentVariableIndex: 0, currentSubSampleIndex: 0 }
     }
 
@@ -207,7 +208,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
         <div style={{ fontSize: 64, marginBottom: 16 }}>&#10003;</div>
         <h2 style={{ fontSize: 24, color: 'var(--green-700)', marginBottom: 8 }}>Trial Complete!</h2>
         <p style={{ color: 'var(--gray-500)', marginBottom: 24 }}>
-          {config.totalPlots} plots recorded for {config.name}
+          {getTotalPlots(config)} plots recorded for {config.name}
         </p>
         <button
           className="btn btn-primary"
@@ -243,7 +244,7 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
         />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
-        <span>Plot {session.currentPlotIndex + 1} of {config.totalPlots}</span>
+        <span>Plot {session.currentPlotIndex + 1} of {getTotalPlots(config)}</span>
         <span>{totalReadingsCompleted} / {grandTotal} readings</span>
       </div>
 

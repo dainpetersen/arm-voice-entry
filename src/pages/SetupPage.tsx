@@ -14,8 +14,8 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
   const existingConfig = configs?.find(c => c.id === id)
 
   const [name, setName] = useState(existingConfig?.name ?? '')
-  const [totalPlots, setTotalPlots] = useState(existingConfig?.totalPlots?.toString() ?? '')
-  const [plotsPerRow, setPlotsPerRow] = useState(existingConfig?.plotsPerRow?.toString() ?? '')
+  const [treatments, setTreatments] = useState(existingConfig?.treatments?.toString() ?? '')
+  const [replications, setReplications] = useState(existingConfig?.replications?.toString() ?? '')
   const [serpentine, setSerpentine] = useState(existingConfig?.serpentine ?? true)
   const [variables, setVariables] = useState<AssessmentVariable[]>(existingConfig?.variables ?? [])
 
@@ -27,8 +27,8 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
   useEffect(() => {
     if (existingConfig) {
       setName(existingConfig.name)
-      setTotalPlots(existingConfig.totalPlots.toString())
-      setPlotsPerRow(existingConfig.plotsPerRow.toString())
+      setTreatments(existingConfig.treatments.toString())
+      setReplications(existingConfig.replications.toString())
       setSerpentine(existingConfig.serpentine)
       setVariables(existingConfig.variables)
     }
@@ -52,14 +52,18 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
     setVariables(variables.filter(v => v.id !== varId))
   }
 
+  const numTreatments = parseInt(treatments) || 0
+  const numReplications = parseInt(replications) || 0
+  const totalPlots = numTreatments * numReplications
+
   const handleSave = () => {
-    if (!name.trim() || !totalPlots || !plotsPerRow || variables.length === 0) return
+    if (!name.trim() || numTreatments <= 0 || numReplications <= 0 || variables.length === 0) return
 
     const config: TrialConfig = {
       id: existingConfig?.id ?? crypto.randomUUID(),
       name: name.trim(),
-      totalPlots: parseInt(totalPlots),
-      plotsPerRow: parseInt(plotsPerRow),
+      treatments: numTreatments,
+      replications: numReplications,
       serpentine,
       variables,
       createdAt: existingConfig?.createdAt ?? Date.now(),
@@ -69,7 +73,7 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
     navigate('/')
   }
 
-  const isValid = name.trim() && parseInt(totalPlots) > 0 && parseInt(plotsPerRow) > 0 && variables.length > 0
+  const isValid = name.trim() && numTreatments > 0 && numReplications > 0 && variables.length > 0
 
   return (
     <>
@@ -93,27 +97,34 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
 
         <div style={{ display: 'flex', gap: 12 }}>
           <div className="field" style={{ flex: 1 }}>
-            <label>Total Plots</label>
+            <label>Treatments</label>
             <input
               type="number"
               inputMode="numeric"
-              value={totalPlots}
-              onChange={e => setTotalPlots(e.target.value)}
-              placeholder="48"
+              value={treatments}
+              onChange={e => setTreatments(e.target.value)}
+              placeholder="8"
             />
+            <div className="field-hint">Columns</div>
           </div>
           <div className="field" style={{ flex: 1 }}>
-            <label>Plots Per Row</label>
+            <label>Replications</label>
             <input
               type="number"
               inputMode="numeric"
-              value={plotsPerRow}
-              onChange={e => setPlotsPerRow(e.target.value)}
-              placeholder="12"
+              value={replications}
+              onChange={e => setReplications(e.target.value)}
+              placeholder="4"
             />
-            <div className="field-hint">For serpentine walk order</div>
+            <div className="field-hint">Rows</div>
           </div>
         </div>
+
+        {totalPlots > 0 && (
+          <div style={{ fontSize: 14, color: 'var(--gray-600)', fontWeight: 600, marginBottom: 16 }}>
+            {totalPlots} total plots ({numTreatments} &times; {numReplications})
+          </div>
+        )}
 
         <div className="field">
           <label>Walk Order</label>
@@ -133,7 +144,7 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
           </div>
           <div className="field-hint">
             {serpentine
-              ? 'Row 1 forward, Row 2 backward, Row 3 forward...'
+              ? 'Rep 1 forward, Rep 2 backward, Rep 3 forward...'
               : 'Plot 1, 2, 3... in order'}
           </div>
         </div>
@@ -209,12 +220,12 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
       </div>
 
       {/* Preview walk order */}
-      {parseInt(totalPlots) > 0 && parseInt(plotsPerRow) > 0 && (
+      {totalPlots > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h3 style={{ fontSize: 15, color: 'var(--gray-600)', marginBottom: 8 }}>Walk Order Preview</h3>
           <WalkOrderPreview
-            totalPlots={parseInt(totalPlots)}
-            plotsPerRow={parseInt(plotsPerRow)}
+            treatments={numTreatments}
+            replications={numReplications}
             serpentine={serpentine}
           />
         </div>
@@ -232,15 +243,15 @@ export function SetupPage({ configs, onSave }: SetupPageProps) {
   )
 }
 
-function WalkOrderPreview({ totalPlots, plotsPerRow, serpentine }: { totalPlots: number; plotsPerRow: number; serpentine: boolean }) {
-  if (totalPlots > 200 || plotsPerRow <= 0) return null
+function WalkOrderPreview({ treatments, replications, serpentine }: { treatments: number; replications: number; serpentine: boolean }) {
+  const totalPlots = treatments * replications
+  if (totalPlots > 200 || treatments <= 0 || replications <= 0) return null
 
   const rows: number[][] = []
-  const totalRows = Math.ceil(totalPlots / plotsPerRow)
 
-  for (let row = 0; row < Math.min(totalRows, 6); row++) {
-    const start = row * plotsPerRow + 1
-    const end = Math.min(start + plotsPerRow - 1, totalPlots)
+  for (let row = 0; row < Math.min(replications, 6); row++) {
+    const start = row * treatments + 1
+    const end = start + treatments - 1
     const rowPlots: number[] = []
     for (let p = start; p <= end; p++) {
       rowPlots.push(p)
@@ -260,6 +271,9 @@ function WalkOrderPreview({ totalPlots, plotsPerRow, serpentine }: { totalPlots:
             flexDirection: serpentine && rowIdx % 2 === 1 ? 'row-reverse' : 'row',
           }}
         >
+          <div style={{ fontSize: 11, color: 'var(--gray-400)', display: 'flex', alignItems: 'center', minWidth: 36 }}>
+            Rep {rowIdx + 1}
+          </div>
           {row.map(plot => (
             <div
               key={plot}
@@ -284,9 +298,9 @@ function WalkOrderPreview({ totalPlots, plotsPerRow, serpentine }: { totalPlots:
           </div>
         </div>
       ))}
-      {totalRows > 6 && (
+      {replications > 6 && (
         <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 4 }}>
-          ...and {totalRows - 6} more row{totalRows - 6 !== 1 ? 's' : ''}
+          ...and {replications - 6} more rep{replications - 6 !== 1 ? 's' : ''}
         </div>
       )}
     </div>

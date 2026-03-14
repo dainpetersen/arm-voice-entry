@@ -40,7 +40,7 @@ export function HomePage({ configs, sessions, deleteConfig }: HomePageProps) {
                 <div>
                   <h3>{config.name}</h3>
                   <p>
-                    {config.totalPlots} plots &middot; {config.variables.length} variable{config.variables.length !== 1 ? 's' : ''}
+                    {config.treatments}&times;{config.replications} ({config.treatments * config.replications} plots) &middot; {config.variables.length} variable{config.variables.length !== 1 ? 's' : ''}
                     {configSessions.length > 0 && ` · ${configSessions.length} session${configSessions.length !== 1 ? 's' : ''}`}
                   </p>
                 </div>
@@ -70,7 +70,7 @@ export function HomePage({ configs, sessions, deleteConfig }: HomePageProps) {
                       <h3>{session.config.name}</h3>
                       <p>
                         {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        {' '}&middot; {filledPlots}/{session.config.totalPlots} plots
+                        {' '}&middot; {filledPlots}/{session.config.treatments * session.config.replications} plots
                         {session.completedAt ? ' · Complete' : ' · In Progress'}
                       </p>
                     </div>

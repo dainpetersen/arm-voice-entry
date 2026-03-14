@@ -8,11 +8,16 @@ export interface AssessmentVariable {
 export interface TrialConfig {
   id: string
   name: string
-  totalPlots: number
-  plotsPerRow: number
+  treatments: number  // columns
+  replications: number  // rows
   serpentine: boolean
   variables: AssessmentVariable[]
   createdAt: number
+}
+
+/** Derived helpers */
+export function getTotalPlots(config: TrialConfig): number {
+  return config.treatments * config.replications
 }
 
 export interface PlotData {
@@ -32,13 +37,13 @@ export interface TrialSession {
 }
 
 /** Returns plot numbers in serpentine walk order */
-export function getSerpentineOrder(totalPlots: number, plotsPerRow: number): number[] {
+export function getSerpentineOrder(treatments: number, replications: number): number[] {
   const order: number[] = []
-  const totalRows = Math.ceil(totalPlots / plotsPerRow)
+  const totalPlots = treatments * replications
 
-  for (let row = 0; row < totalRows; row++) {
-    const start = row * plotsPerRow + 1
-    const end = Math.min(start + plotsPerRow - 1, totalPlots)
+  for (let row = 0; row < replications; row++) {
+    const start = row * treatments + 1
+    const end = Math.min(start + treatments - 1, totalPlots)
     const rowPlots: number[] = []
 
     for (let p = start; p <= end; p++) {
@@ -62,8 +67,9 @@ export function getSequentialOrder(totalPlots: number): number[] {
 }
 
 export function getPlotOrder(config: TrialConfig): number[] {
+  const totalPlots = getTotalPlots(config)
   if (config.serpentine) {
-    return getSerpentineOrder(config.totalPlots, config.plotsPerRow)
+    return getSerpentineOrder(config.treatments, config.replications)
   }
-  return getSequentialOrder(config.totalPlots)
+  return getSequentialOrder(totalPlots)
 }
