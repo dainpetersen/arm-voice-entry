@@ -25,6 +25,13 @@ function getSpeechRecognition(): SpeechRecognitionConstructor | null {
   return (w.SpeechRecognition ?? w.webkitSpeechRecognition) as SpeechRecognitionConstructor | null
 }
 
+/** Detect iOS (iPhone/iPad/iPod) */
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
 /** Parse spoken text into a number. Handles "twelve point five", "dash"/"skip" for missing data. */
 export function parseSpokenNumber(text: string): number | null | undefined {
   const cleaned = text.trim().toLowerCase()
@@ -100,9 +107,12 @@ export function useSpeechRecognition(
   const onResultRef = useRef(onResult)
   const interimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastCommittedRef = useRef<string>('')
+  const shouldRestartRef = useRef(false)
+  const restartDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   onResultRef.current = onResult
 
+  const ios = isIOS()
   const isSupported = typeof window !== 'undefined' && getSpeechRecognition() !== null
 
   const startListening = useCallback(() => {
@@ -112,8 +122,15 @@ export function useSpeechRecognition(
       return
     }
 
+    // Clean up any existing instance first
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort() } catch { /* ignore */ }
+      recognitionRef.current = null
+    }
+
     const recognition = new SpeechRecognition()
-    recognition.continuous = true
+    // iOS crashes with continuous mode — use single-shot and auto-restart with delay
+    recognition.continuous = !ios
     recognition.interimResults = true
     recognition.lang = 'en-US'
 
@@ -144,7 +161,6 @@ export function useSpeechRecognition(
       } else if (interimTranscript) {
         setTranscript(interimTranscript)
         // Auto-commit interim results after 1.5s if they never become final
-        // This handles the common case where short utterances get stuck
         interimTimeoutRef.current = setTimeout(() => {
           if (interimTranscript && interimTranscript !== lastCommittedRef.current) {
             lastCommittedRef.current = interimTranscript
@@ -156,38 +172,70 @@ export function useSpeechRecognition(
     }
 
     recognition.onerror = (event) => {
-      // 'no-speech' is normal, don't treat as error
-      if (event.error !== 'no-speech') {
+      // 'no-speech' and 'aborted' are normal during restart cycles
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
         setError(`Speech error: ${event.error}`)
-      }
-    }
-
-    recognition.onend = () => {
-      // Auto-restart if we're still supposed to be listening
-      if (recognitionRef.current) {
-        try {
-          recognition.start()
-        } catch {
+        // On iOS, 'not-allowed' means microphone permission denied
+        if (event.error === 'not-allowed') {
+          shouldRestartRef.current = false
           setIsListening(false)
         }
       }
     }
 
+    recognition.onend = () => {
+      // Auto-restart if we're still supposed to be listening
+      if (shouldRestartRef.current) {
+        // On iOS, add a small delay before restarting to prevent crash loops
+        const delay = ios ? 300 : 0
+        restartDelayRef.current = setTimeout(() => {
+          restartDelayRef.current = null
+          if (shouldRestartRef.current) {
+            try {
+              const newRecognition = new SpeechRecognition()
+              newRecognition.continuous = !ios
+              newRecognition.interimResults = true
+              newRecognition.lang = 'en-US'
+              newRecognition.onresult = recognition.onresult
+              newRecognition.onerror = recognition.onerror
+              newRecognition.onend = recognition.onend
+              recognitionRef.current = newRecognition
+              newRecognition.start()
+            } catch {
+              shouldRestartRef.current = false
+              setIsListening(false)
+            }
+          }
+        }, delay)
+      }
+    }
+
+    shouldRestartRef.current = true
     recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
-    setError(null)
-  }, [])
+    try {
+      recognition.start()
+      setIsListening(true)
+      setError(null)
+    } catch {
+      setError('Failed to start speech recognition')
+      shouldRestartRef.current = false
+    }
+  }, [ios])
 
   const stopListening = useCallback(() => {
+    shouldRestartRef.current = false
     if (interimTimeoutRef.current) {
       clearTimeout(interimTimeoutRef.current)
       interimTimeoutRef.current = null
     }
+    if (restartDelayRef.current) {
+      clearTimeout(restartDelayRef.current)
+      restartDelayRef.current = null
+    }
     if (recognitionRef.current) {
       const rec = recognitionRef.current
       recognitionRef.current = null
-      rec.stop()
+      try { rec.stop() } catch { /* ignore */ }
     }
     setIsListening(false)
   }, [])
@@ -199,11 +247,15 @@ export function useSpeechRecognition(
 
   useEffect(() => {
     return () => {
+      shouldRestartRef.current = false
       if (interimTimeoutRef.current) {
         clearTimeout(interimTimeoutRef.current)
       }
+      if (restartDelayRef.current) {
+        clearTimeout(restartDelayRef.current)
+      }
       if (recognitionRef.current) {
-        recognitionRef.current.abort()
+        try { recognitionRef.current.abort() } catch { /* ignore */ }
         recognitionRef.current = null
       }
     }
