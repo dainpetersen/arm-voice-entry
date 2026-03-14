@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { TrialConfig, TrialSession } from '../types'
+import { enqueueSync } from '../lib/sync'
 
 const CONFIGS_KEY = 'arm-voice-trial-configs'
 const SESSIONS_KEY = 'arm-voice-trial-sessions'
@@ -30,6 +31,7 @@ export function useTrialStorage() {
       localStorage.setItem(CONFIGS_KEY, JSON.stringify(next))
       return next
     })
+    enqueueSync({ type: 'config', payload: config, timestamp: Date.now() })
   }, [])
 
   const deleteConfig = useCallback((id: string) => {
@@ -38,6 +40,7 @@ export function useTrialStorage() {
       localStorage.setItem(CONFIGS_KEY, JSON.stringify(next))
       return next
     })
+    enqueueSync({ type: 'delete-config', payload: id, timestamp: Date.now() })
   }, [])
 
   const saveSession = useCallback((session: TrialSession) => {
@@ -50,6 +53,7 @@ export function useTrialStorage() {
       localStorage.setItem(SESSIONS_KEY, JSON.stringify(next))
       return next
     })
+    enqueueSync({ type: 'session', payload: session, timestamp: Date.now() })
   }, [])
 
   const deleteSession = useCallback((configId: string, startedAt: number) => {
@@ -58,6 +62,7 @@ export function useTrialStorage() {
       localStorage.setItem(SESSIONS_KEY, JSON.stringify(next))
       return next
     })
+    enqueueSync({ type: 'delete-session', payload: { configId, startedAt }, timestamp: Date.now() })
   }, [])
 
   return { configs, sessions, saveConfig, deleteConfig, saveSession, deleteSession }

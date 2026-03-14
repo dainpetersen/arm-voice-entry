@@ -20,10 +20,23 @@ export function getTotalPlots(config: TrialConfig): number {
   return config.treatments * config.replications
 }
 
+export interface PlotNote {
+  text: string
+  timestamp: number
+}
+
+export interface PlotPhoto {
+  /** Base64 data URL for localStorage; Supabase URL after sync */
+  dataUrl: string
+  timestamp: number
+}
+
 export interface PlotData {
   plotNumber: number
   /** readings[variableId][subSampleIndex] = value or null */
   readings: Record<string, (number | null)[]>
+  notes: PlotNote[]
+  photos: PlotPhoto[]
 }
 
 export interface TrialSession {

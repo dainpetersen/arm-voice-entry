@@ -22,6 +22,7 @@ export function generateCSV(session: TrialSession): string {
       }
     }
   }
+  headers.push('Notes')
 
   // Build data rows in plot-number order (1, 2, 3... not serpentine walk order)
   const sortedData = [...data].sort((a, b) => a.plotNumber - b.plotNumber)
@@ -37,6 +38,10 @@ export function generateCSV(session: TrialSession): string {
         cells.push(val === null || val === undefined ? '' : String(val))
       }
     }
+
+    // Notes column — join multiple notes with semicolons, quote if contains commas
+    const notesText = (plot.notes ?? []).map(n => n.text).join('; ')
+    cells.push(notesText.includes(',') || notesText.includes('"') ? `"${notesText.replace(/"/g, '""')}"` : notesText)
 
     rows.push(cells.join(','))
   }

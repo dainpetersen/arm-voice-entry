@@ -1,14 +1,18 @@
 import { useNavigate } from 'react-router-dom'
 import type { TrialConfig, TrialSession } from '../types'
+import type { SyncStatus } from '../hooks/useSync'
+import { useAuthContext } from '../components/AuthGate'
 
 interface HomePageProps {
   configs: TrialConfig[]
   sessions: TrialSession[]
   deleteConfig: (id: string) => void
+  syncStatus?: SyncStatus & { syncNow: () => void }
 }
 
-export function HomePage({ configs, sessions, deleteConfig }: HomePageProps) {
+export function HomePage({ configs, sessions, deleteConfig, syncStatus }: HomePageProps) {
   const navigate = useNavigate()
+  const auth = useAuthContext()
 
   return (
     <>
@@ -18,6 +22,33 @@ export function HomePage({ configs, sessions, deleteConfig }: HomePageProps) {
         </h1>
         <p className="brand-subtitle">Voice Entry</p>
       </div>
+
+      {/* Sync status bar */}
+      {syncStatus?.enabled && (
+        <div
+          className="sync-bar"
+          onClick={syncStatus.syncNow}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 12px', marginBottom: 16, borderRadius: 'var(--radius-sm)',
+            fontSize: 13, cursor: 'pointer',
+            background: syncStatus.error ? 'var(--red-50, #fef2f2)' : 'var(--green-50)',
+            color: syncStatus.error ? 'var(--red-600, #dc2626)' : 'var(--green-700)',
+            border: `1px solid ${syncStatus.error ? 'var(--red-200, #fecaca)' : 'var(--green-200)'}`,
+          }}
+        >
+          <span>
+            {syncStatus.isSyncing ? 'Syncing...' :
+             syncStatus.error ? syncStatus.error :
+             syncStatus.pendingCount > 0 ? `${syncStatus.pendingCount} change${syncStatus.pendingCount !== 1 ? 's' : ''} pending` :
+             syncStatus.lastSync ? `Synced ${new Date(syncStatus.lastSync).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` :
+             'Cloud sync enabled'}
+          </span>
+          <span style={{ fontSize: 16 }}>
+            {syncStatus.isSyncing ? '...' : syncStatus.pendingCount > 0 ? '↑' : '✓'}
+          </span>
+        </div>
+      )}
 
       <button className="btn btn-primary" onClick={() => navigate('/setup')} style={{ marginBottom: 24 }}>
         + New Trial
@@ -114,6 +145,25 @@ export function HomePage({ configs, sessions, deleteConfig }: HomePageProps) {
             </div>
           </details>
         </>
+      )}
+
+      {/* Account section */}
+      {auth && (
+        <div style={{
+          marginTop: 32, paddingTop: 16, borderTop: '1px solid var(--gray-200)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: 13, color: 'var(--gray-400)' }}>
+            {auth.user.email}
+          </span>
+          <button
+            className="btn btn-secondary btn-sm"
+            style={{ width: 'auto', fontSize: 13 }}
+            onClick={auth.signOut}
+          >
+            Sign Out
+          </button>
+        </div>
       )}
     </>
   )
