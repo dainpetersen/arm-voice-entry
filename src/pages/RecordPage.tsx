@@ -438,7 +438,6 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
               })
             }
           }
-          // Flat index of current reading
           const currentFlatIdx = config.variables.slice(0, session.currentVariableIndex).reduce((sum, v) => sum + v.subSamples, 0) + session.currentSubSampleIndex
 
           // Which rows to show: prev, current, next
@@ -449,52 +448,58 @@ export function RecordPage({ configs, sessions, onSaveSession }: RecordPageProps
 
           return (
             <div className="padlock-container">
-              {/* Column headers */}
-              <div className="padlock-row padlock-row-header">
-                <div className="padlock-plot-cell padlock-header-cell">#</div>
-                {columns.map((col, ci) => (
-                  <div key={ci} className={`padlock-data-cell padlock-header-cell ${ci === currentFlatIdx ? 'padlock-col-active' : ''}`}>
-                    {col.label}
-                  </div>
-                ))}
+              <div className="padlock-grid" style={{ gridTemplateColumns: `48px repeat(${columns.length}, 1fr)` }}>
+                {/* Column headers */}
+                <div className="padlock-row padlock-row-header">
+                  <div className="padlock-plot-cell padlock-header-cell">#</div>
+                  {columns.map((col, ci) => (
+                    <div key={ci} className={`padlock-data-cell padlock-header-cell ${ci === currentFlatIdx ? 'padlock-col-active' : ''}`}>
+                      {col.label}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Data rows */}
+                {rowIndices.map(rowIdx => {
+                  const plot = session.data[rowIdx]
+                  if (!plot) return null
+                  const isCurrent = rowIdx === session.currentPlotIndex
+                  return (
+                    <div key={rowIdx} className={`padlock-row ${isCurrent ? 'padlock-row-current' : 'padlock-row-dim'}`}>
+                      <div className="padlock-plot-cell">{plot.plotNumber}</div>
+                      {columns.map((col, ci) => {
+                        const reading = plot.readings[col.varId]?.[col.subIdx]
+                        const isActiveCell = isCurrent && ci === currentFlatIdx
+                        const displayVal = reading != null
+                          ? (reading % 1 === 0 ? reading.toString() : reading.toFixed(1))
+                          : ''
+
+                        return (
+                          <div
+                            key={ci}
+                            className={`padlock-data-cell ${isActiveCell ? 'padlock-cell-active' : ''} ${ci === currentFlatIdx && !isActiveCell ? 'padlock-col-active' : ''} ${!isCurrent ? '' : reading != null ? 'padlock-cell-filled' : ci < currentFlatIdx ? 'padlock-cell-skipped' : ''}`}
+                          >
+                            {isActiveCell ? (
+                              <span className="padlock-cell-input">
+                                {inputMode === 'voice'
+                                  ? (transcript || lastRecognized || '...')
+                                  : (keypadValue || '...')
+                                }
+                              </span>
+                            ) : displayVal ? (
+                              <span className="padlock-cell-value" key={`${rowIdx}-${ci}-${displayVal}`}>
+                                {displayVal}
+                              </span>
+                            ) : (
+                              reading === null && !isCurrent ? '' : <span className="padlock-cell-empty">—</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
               </div>
-
-              {/* Data rows */}
-              {rowIndices.map(rowIdx => {
-                const plot = session.data[rowIdx]
-                if (!plot) return null
-                const isCurrent = rowIdx === session.currentPlotIndex
-                return (
-                  <div key={rowIdx} className={`padlock-row ${isCurrent ? 'padlock-row-current' : 'padlock-row-dim'}`}>
-                    <div className="padlock-plot-cell">{plot.plotNumber}</div>
-                    {columns.map((col, ci) => {
-                      const reading = plot.readings[col.varId]?.[col.subIdx]
-                      const isActiveCell = isCurrent && ci === currentFlatIdx
-                      const displayVal = reading != null
-                        ? (reading % 1 === 0 ? reading.toString() : reading.toFixed(1))
-                        : ''
-
-                      return (
-                        <div
-                          key={ci}
-                          className={`padlock-data-cell ${isActiveCell ? 'padlock-cell-active' : ''} ${!isCurrent ? '' : reading != null ? 'padlock-cell-filled' : ci < currentFlatIdx ? 'padlock-cell-skipped' : ''}`}
-                        >
-                          {isActiveCell ? (
-                            <span className="padlock-cell-input">
-                              {inputMode === 'voice'
-                                ? (transcript || lastRecognized || '...')
-                                : (keypadValue || '...')
-                              }
-                            </span>
-                          ) : (
-                            displayVal || (reading === null && !isCurrent ? '' : <span className="padlock-cell-empty">—</span>)
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
             </div>
           )
         })()}
