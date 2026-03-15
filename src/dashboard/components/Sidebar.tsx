@@ -33,6 +33,10 @@ export function Sidebar() {
           <span className="sidebar-link-icon">{'\u26A1'}</span>
           Workflows
         </NavLink>
+        <NavLink to="/dashboard/import" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+          <span className="sidebar-link-icon">{'\u{1F4C4}'}</span>
+          Import Protocol
+        </NavLink>
       </div>
 
       <div className="sidebar-spacer" />

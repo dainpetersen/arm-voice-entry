@@ -406,6 +406,41 @@ export function SchedulePage() {
                 Skipped
               </button>
             )}
+            {/* Assessment variables */}
+            {act.assessmentVariables && act.assessmentVariables.length > 0 && (
+              <div style={{ width: '100%', marginTop: 6, padding: '6px 8px', background: 'white', borderRadius: 6, border: '1px solid var(--gray-100)' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--gray-400)', textTransform: 'uppercase', marginBottom: 4 }}>
+                  Variables to Record
+                </div>
+                {act.assessmentVariables.map((v, vi) => (
+                  <div key={vi} style={{ fontSize: 12, color: 'var(--gray-600)', display: 'flex', gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontWeight: 600 }}>{v.name}</span>
+                    <span style={{ color: 'var(--gray-400)' }}>
+                      {v.scaleMin !== undefined && v.scaleMax !== undefined ? `${v.scaleMin}–${v.scaleMax}${v.scaleUnit ?? ''}` : v.scaleUnit ?? ''}
+                    </span>
+                    {v.compareToCheck && <span style={{ fontSize: 10, color: '#3b82f6' }}>vs. check</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Photo requirement */}
+            {act.photoRequirement?.required && (
+              <div style={{ width: '100%', marginTop: 4, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span>📷</span>
+                <span style={{ color: 'var(--gray-500)' }}>{act.photoRequirement.description ?? 'Photo required'}</span>
+                {act.photoRequirement.conditional && (
+                  <span style={{ fontSize: 11, fontStyle: 'italic', color: 'var(--gray-400)' }}>
+                    — {act.photoRequirement.conditional}
+                  </span>
+                )}
+              </div>
+            )}
+            {/* Offset anchor badge */}
+            {act.offsetAnchor && act.offsetDays !== undefined && (
+              <div style={{ width: '100%', marginTop: 4, fontSize: 11, color: 'var(--gray-400)' }}>
+                Timing: {act.offsetDays} days after {act.offsetAnchor === 'emergence' ? 'emergence (DAE)' : act.offsetAnchor === 'treatment' ? 'treatment (DAT)' : act.offsetAnchor === 'planting' ? 'planting (DAP)' : act.offsetAnchor}
+              </div>
+            )}
             {act.notes && (
               <div style={{ width: '100%', fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>
                 Notes: {act.notes}

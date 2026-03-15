@@ -15,6 +15,7 @@ import { TrialDetailPage } from './dashboard/pages/TrialDetailPage'
 import { ClientsPage } from './dashboard/pages/ClientsPage'
 import { SchedulePage } from './dashboard/pages/SchedulePage'
 import { WorkflowsPage } from './dashboard/pages/WorkflowsPage'
+import { ProtocolImportPage } from './dashboard/pages/ProtocolImportPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
@@ -48,6 +49,7 @@ export function App() {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="workflows" element={<WorkflowsPage />} />
+          <Route path="import" element={<ProtocolImportPage />} />
         </Route>
 
         {/* Mobile voice-entry routes — existing .container wrapper with auth */}
