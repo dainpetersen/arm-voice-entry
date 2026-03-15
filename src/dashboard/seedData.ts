@@ -257,5 +257,6 @@ export function generateSeedData(): DashboardData {
     plots,
     clients,
     trials,
+    workflowTemplates: [],
   }
 }

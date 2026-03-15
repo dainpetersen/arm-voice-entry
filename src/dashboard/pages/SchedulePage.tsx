@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDashboard } from '../components/DashboardLayout'
 import { ACTIVITY_TYPES, TRIAL_STATUS_COLORS, TRIAL_STATUS_LABELS } from '../types'
 import type { DashboardTrial, ScheduledActivity, ActivityStatus, ActivityType } from '../types'
+import { evaluateWorkflowRules, BUILT_IN_TEMPLATES, isActivityBlocked } from '../workflowEngine'
 
 const STATUS_CONFIG: Record<ActivityStatus, { label: string; color: string; bg: string }> = {
   scheduled: { label: 'Scheduled', color: 'var(--green-700)', bg: 'var(--green-100)' },
@@ -265,10 +266,15 @@ export function SchedulePage() {
   const completed = allActivities.filter(a => a.status === 'completed')
   const skipped = allActivities.filter(a => a.status === 'skipped')
 
+  // Merge built-in + custom templates for workflow lookup
+  const allTemplates = [...BUILT_IN_TEMPLATES, ...(data.workflowTemplates ?? [])]
+
   function setActivityStatus(activity: ScheduledActivity & { trialId: string }, newStatus: ActivityStatus) {
     const trial = data.trials.find(t => t.id === activity.trialId)
     if (!trial) return
-    const updatedActivities = trial.scheduledActivities.map(a =>
+
+    // Update the activity status
+    let updatedActivities = trial.scheduledActivities.map(a =>
       a.id === activity.id
         ? {
             ...a,
@@ -277,6 +283,16 @@ export function SchedulePage() {
           }
         : a
     )
+
+    // If completing/skipping, evaluate workflow rules to auto-schedule downstream
+    if (newStatus === 'completed' || newStatus === 'skipped') {
+      const template = allTemplates.find(t => t.id === trial.workflowTemplateId)
+      if (template) {
+        const trialWithUpdated = { ...trial, scheduledActivities: updatedActivities }
+        updatedActivities = evaluateWorkflowRules(trialWithUpdated, activity.id, template)
+      }
+    }
+
     saveTrial({ ...trial, scheduledActivities: updatedActivities, updatedAt: Date.now() })
     setExpandedId(null)
   }
@@ -295,8 +311,13 @@ export function SchedulePage() {
     const effective = getEffectiveStatus(act)
     const cfg = STATUS_CONFIG[effective]
 
+    // Check if this activity is blocked by workflow dependencies
+    const trial = data.trials.find(t => t.id === act.trialId)
+    const template = trial ? allTemplates.find(t => t.id === trial.workflowTemplateId) : undefined
+    const blocked = trial && template ? isActivityBlocked(act, trial, template) : false
+
     return (
-      <div key={act.id} style={{ borderBottom: '1px solid var(--gray-100)' }}>
+      <div key={act.id} style={{ borderBottom: '1px solid var(--gray-100)', opacity: blocked ? 0.5 : 1 }}>
         <div
           className="activity-item"
           style={{ cursor: 'pointer' }}
@@ -304,24 +325,33 @@ export function SchedulePage() {
         >
           <div className={`activity-dot ${dotClass}`} />
           <div className="activity-info">
-            <div className="activity-title">
+            <div className="activity-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               {getTypeLabel(act.type)}: {act.description}
+              {blocked && (
+                <span style={{ fontSize: 10, padding: '1px 6px', background: '#f1f5f9', color: '#64748b', borderRadius: 4, fontWeight: 600 }}>
+                  BLOCKED
+                </span>
+              )}
             </div>
             <div className="activity-meta">
-              {act.trialName} &middot; {new Date(act.scheduledDate + 'T00:00:00').toLocaleDateString()}
+              {act.trialName}
+              {act.scheduledDate
+                ? <> &middot; {new Date(act.scheduledDate + 'T00:00:00').toLocaleDateString()}</>
+                : <> &middot; <em style={{ color: 'var(--gray-400)' }}>date pending</em></>
+              }
               {act.assignedTo && <> &middot; {act.assignedTo}</>}
             </div>
           </div>
           <span
             className="status-badge"
             style={{
-              background: cfg.bg,
-              color: cfg.color,
+              background: blocked ? '#f1f5f9' : cfg.bg,
+              color: blocked ? '#64748b' : cfg.color,
               fontSize: 11,
               flexShrink: 0,
             }}
           >
-            {cfg.label}
+            {blocked ? 'Blocked' : cfg.label}
           </span>
         </div>
 

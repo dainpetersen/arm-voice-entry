@@ -29,6 +29,10 @@ export function Sidebar() {
           <span className="sidebar-link-icon">&#9716;</span>
           Schedule
         </NavLink>
+        <NavLink to="/dashboard/workflows" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
+          <span className="sidebar-link-icon">{'\u26A1'}</span>
+          Workflows
+        </NavLink>
       </div>
 
       <div className="sidebar-spacer" />

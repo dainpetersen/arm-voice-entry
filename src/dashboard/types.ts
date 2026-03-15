@@ -156,10 +156,32 @@ export interface DashboardTrial {
   contractEndDate?: string
 
   scheduledActivities: ScheduledActivity[]
+  workflowTemplateId?: string
 
   voiceEntryConfigId?: string
 
   notes?: string
+  createdAt: number
+  updatedAt: number
+}
+
+// --- Workflow Templates ---
+
+export interface WorkflowStage {
+  id: string
+  name: string
+  activityType: ActivityType
+  dependsOn: string[]   // stage IDs that must complete first
+  offsetDays: number    // days after last dependency completes
+  description?: string  // default description for the generated activity
+}
+
+export interface WorkflowTemplate {
+  id: string
+  name: string
+  cropType: string       // e.g. "Corn", "Soybean", or "*" for any crop
+  stages: WorkflowStage[]
+  isBuiltIn?: boolean    // true for pre-built templates (not editable)
   createdAt: number
   updatedAt: number
 }
@@ -173,6 +195,7 @@ export interface DashboardData {
   plots: Plot[]
   clients: Client[]
   trials: DashboardTrial[]
+  workflowTemplates: WorkflowTemplate[]
 }
 
 export const DEFAULT_DASHBOARD_DATA: DashboardData = {
@@ -182,4 +205,5 @@ export const DEFAULT_DASHBOARD_DATA: DashboardData = {
   plots: [],
   clients: [],
   trials: [],
+  workflowTemplates: [],
 }
