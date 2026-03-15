@@ -17,8 +17,10 @@ export function ProtocolImportPage() {
     setImported(false)
 
     try {
-      const text = await file.text()
-      const result = parseProtocolText(text)
+      // Read as ArrayBuffer for binary .prt0 support, fall back to text for .prt/.txt
+      const isBinary = file.name.endsWith('.prt0') || file.name.endsWith('.prt')
+      const input = isBinary ? await file.arrayBuffer() : await file.text()
+      const result = parseProtocolText(input)
       setParsed(result)
 
       // Try to match sponsor to existing client
@@ -86,7 +88,7 @@ export function ProtocolImportPage() {
         onClick={() => {
           const input = document.createElement('input')
           input.type = 'file'
-          input.accept = '.prt,.txt,.pdf'
+          input.accept = '.prt,.prt0,.txt,.pdf'
           input.onchange = (e) => {
             const file = (e.target as HTMLInputElement).files?.[0]
             if (file) handleFile(file)
@@ -99,7 +101,7 @@ export function ProtocolImportPage() {
           Drop ARM Protocol File Here
         </div>
         <div style={{ fontSize: 13, color: 'var(--gray-400)' }}>
-          Supports .prt and .txt protocol exports from ARM
+          Supports .prt0 (native ARM), .prt, and .txt protocol files
         </div>
       </div>
 
@@ -113,8 +115,14 @@ export function ProtocolImportPage() {
         <div className="dash-card" style={{ background: '#dcfce7', border: '1px solid #bbf7d0', color: '#166534' }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>✓ Protocol imported successfully!</div>
           <div style={{ fontSize: 13 }}>
-            Trial "{parsed?.title}" created with {parsed?.treatments.length} treatments,{' '}
-            {parsed?.assessmentSchedules.reduce((sum, s) => sum + s.timings.length, 0)} assessment activities.
+            Trial "{parsed?.title}" created with {parsed?.treatments.length} treatments
+            {(parsed?.assessmentSchedules?.length ?? 0) > 0 && (
+              <>, {parsed?.assessmentSchedules.reduce((sum, s) => sum + s.timings.length, 0)} assessment activities</>
+            )}
+            {(parsed?.maintenanceProducts?.length ?? 0) > 0 && (
+              <>, {parsed?.maintenanceProducts.length} maintenance products</>
+            )}
+            .{' '}
             Go to <a href="#/dashboard/trials" style={{ color: '#166534', fontWeight: 600 }}>Trials</a> to view.
           </div>
         </div>
@@ -129,14 +137,17 @@ export function ProtocolImportPage() {
           {/* Metadata */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
             <div>
-              <InfoRow label="Protocol ID" value={parsed.protocolId} />
-              <InfoRow label="Trial ID" value={parsed.trialId} />
+              <InfoRow label="Protocol ID" value={parsed.protocolId || '—'} />
               <InfoRow label="Year" value={String(parsed.trialYear)} />
               <InfoRow label="Sponsor" value={parsed.sponsor} />
               {parsed.studyDirector && <InfoRow label="Study Director" value={parsed.studyDirector} />}
+              {parsed.investigator && <InfoRow label="Investigator" value={parsed.investigator} />}
+              {parsed.investigatorEmail && <InfoRow label="Email" value={parsed.investigatorEmail} />}
+              {parsed.investigatorPhone && <InfoRow label="Phone" value={parsed.investigatorPhone} />}
             </div>
             <div>
               <InfoRow label="Crop" value={`${parsed.cropType}${parsed.cropCode ? ` (${parsed.cropCode})` : ''}`} />
+              {parsed.cropStageScale && <InfoRow label="Stage Scale" value={parsed.cropStageScale} />}
               <InfoRow label="Plot Size" value={`${parsed.plotWidthFt} × ${parsed.plotLengthFt} ft (${(parsed.plotWidthFt * parsed.plotLengthFt).toFixed(0)} ft²)`} />
               <InfoRow label="Design" value={`${parsed.studyDesign}, ${parsed.replications} reps`} />
               <InfoRow label="GLP/GEP" value={`GLP: ${parsed.conductedUnderGLP ? 'Yes' : 'No'}, GEP: ${parsed.conductedUnderGEP ? 'Yes' : 'No'}`} />
@@ -160,54 +171,90 @@ export function ProtocolImportPage() {
           )}
 
           {/* Treatments */}
-          <div style={{ marginBottom: 16 }}>
-            <SectionLabel>Treatments ({parsed.treatments.length})</SectionLabel>
-            <table className="dash-table" style={{ fontSize: 13 }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 40 }}>Trt</th>
-                  <th style={{ width: 60 }}>Type</th>
-                  <th>Product</th>
-                  <th style={{ width: 80 }}>Rate</th>
-                  <th style={{ width: 80 }}>Unit</th>
-                  <th style={{ width: 60 }}>App</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parsed.treatments.map(trt =>
-                  trt.components.map((comp, ci) => (
-                    <tr key={`${trt.number}-${ci}`} style={{ cursor: 'default' }}>
-                      <td style={{ fontWeight: ci === 0 ? 600 : 400, color: ci === 0 ? 'var(--gray-800)' : 'var(--gray-400)' }}>
-                        {ci === 0 ? trt.number : ''}
-                      </td>
-                      <td>
-                        <span style={{
-                          fontSize: 10,
-                          padding: '2px 6px',
-                          borderRadius: 4,
-                          fontWeight: 600,
-                          background: comp.type === 'CHK' ? '#f1f5f9' :
-                            comp.type === 'HERB' ? '#dbeafe' :
-                            comp.type === 'ADJ' ? '#fef3c7' :
-                            comp.type === 'FUNG' ? '#d1fae5' : '#f3e8ff',
-                          color: comp.type === 'CHK' ? '#64748b' :
-                            comp.type === 'HERB' ? '#1e40af' :
-                            comp.type === 'ADJ' ? '#92400e' :
-                            comp.type === 'FUNG' ? '#065f46' : '#6b21a8',
-                        }}>
-                          {comp.type}
-                        </span>
-                      </td>
-                      <td style={{ fontWeight: 500 }}>{comp.name}</td>
-                      <td>{comp.rate || '—'}</td>
-                      <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{comp.rateUnit || '—'}</td>
-                      <td style={{ fontSize: 12 }}>{comp.applDescription || comp.applCode || '—'}</td>
+          {parsed.treatments.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionLabel>Treatments ({parsed.treatments.length})</SectionLabel>
+              <table className="dash-table" style={{ fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 40 }}>Trt</th>
+                    <th style={{ width: 60 }}>Type</th>
+                    <th>Product</th>
+                    <th style={{ width: 80 }}>Rate</th>
+                    <th style={{ width: 80 }}>Unit</th>
+                    <th style={{ width: 80 }}>App</th>
+                    <th style={{ width: 80 }}>Timing</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsed.treatments.map(trt =>
+                    trt.components.map((comp, ci) => (
+                      <tr key={`${trt.number}-${ci}`} style={{ cursor: 'default' }}>
+                        <td style={{ fontWeight: ci === 0 ? 600 : 400, color: ci === 0 ? 'var(--gray-800)' : 'var(--gray-400)' }}>
+                          {ci === 0 ? trt.number : ''}
+                        </td>
+                        <td>
+                          <TypeBadge type={comp.type} />
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{comp.name}</td>
+                        <td>{comp.rate || '—'}</td>
+                        <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{comp.rateUnit || '—'}</td>
+                        <td style={{ fontSize: 12 }}>{comp.applCode || '—'}</td>
+                        <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{comp.applDescription || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Maintenance Products */}
+          {parsed.maintenanceProducts.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionLabel>Maintenance Products (Applied to All Plots)</SectionLabel>
+              <table className="dash-table" style={{ fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: 60 }}>Type</th>
+                    <th>Product</th>
+                    <th style={{ width: 80 }}>Rate</th>
+                    <th style={{ width: 80 }}>Unit</th>
+                    <th>Timing / Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsed.maintenanceProducts.map((mp, i) => (
+                    <tr key={i} style={{ cursor: 'default' }}>
+                      <td><TypeBadge type={mp.type} /></td>
+                      <td style={{ fontWeight: 500 }}>{mp.name}</td>
+                      <td>{mp.rate || '—'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{mp.rateUnit || '—'}</td>
+                      <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{mp.description || '—'}</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Study Requirements */}
+          {parsed.studyRequirements && (
+            <div style={{ marginBottom: 16 }}>
+              <SectionLabel>Study Requirements</SectionLabel>
+              <div style={{
+                padding: 12,
+                background: 'var(--gray-50)',
+                borderRadius: 8,
+                fontSize: 13,
+                color: 'var(--gray-600)',
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap',
+              }}>
+                {parsed.studyRequirements}
+              </div>
+            </div>
+          )}
 
           {/* Assessment Schedule */}
           {parsed.assessmentSchedules.length > 0 && (
@@ -293,20 +340,60 @@ export function ProtocolImportPage() {
       {/* Help text */}
       {!parsed && !error && (
         <div className="dash-card" style={{ marginTop: 8 }}>
-          <div className="dash-card-title" style={{ marginBottom: 8 }}>How to Export from ARM</div>
-          <ol style={{ margin: '0 0 0 20px', fontSize: 13, color: 'var(--gray-600)', lineHeight: 1.8 }}>
-            <li>Open your protocol in ARM (e.g. ARM 2025.5)</li>
-            <li>Go to <strong>File → Export → Protocol Text</strong> (or Print to Text)</li>
-            <li>Save as a <strong>.prt</strong> or <strong>.txt</strong> file</li>
-            <li>Drag and drop the file above, or click to browse</li>
-          </ol>
-          <div style={{ fontSize: 12, color: 'var(--gray-400)', marginTop: 12 }}>
+          <div className="dash-card-title" style={{ marginBottom: 8 }}>Supported File Formats</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ padding: 12, background: 'var(--gray-50)', borderRadius: 8 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-700)', marginBottom: 4 }}>
+                .prt0 — Native ARM Protocol
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+                ARM's native binary protocol format. Just drag and drop the .prt0 file directly from your ARM project folder.
+              </div>
+            </div>
+            <div style={{ padding: 12, background: 'var(--gray-50)', borderRadius: 8 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--gray-700)', marginBottom: 4 }}>
+                .prt / .txt — Text Export
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
+                Plain text protocol export. In ARM: File → Export → Protocol Text.
+              </div>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--gray-400)' }}>
             The parser extracts: protocol ID, treatments (including tank mixes), plot dimensions,
-            study design, crop info, objectives, assessment schedules (DAE/DAT), and photo requirements.
+            study design, crop info, objectives, investigator contacts, maintenance products,
+            and assessment schedules (DAE/DAT).
           </div>
         </div>
       )}
     </>
+  )
+}
+
+function TypeBadge({ type }: { type: string }) {
+  const colorMap: Record<string, { bg: string; fg: string }> = {
+    'CHK':  { bg: '#f1f5f9', fg: '#64748b' },
+    'HERB': { bg: '#dbeafe', fg: '#1e40af' },
+    'ADJ':  { bg: '#fef3c7', fg: '#92400e' },
+    'ADDI': { bg: '#fef3c7', fg: '#92400e' },
+    'FUNG': { bg: '#d1fae5', fg: '#065f46' },
+    'FERT': { bg: '#e0e7ff', fg: '#3730a3' },
+    'INSECT': { bg: '#fce7f3', fg: '#9d174d' },
+    'PGR':  { bg: '#f3e8ff', fg: '#6b21a8' },
+  }
+  const colors = colorMap[type] || { bg: '#f3e8ff', fg: '#6b21a8' }
+
+  return (
+    <span style={{
+      fontSize: 10,
+      padding: '2px 6px',
+      borderRadius: 4,
+      fontWeight: 600,
+      background: colors.bg,
+      color: colors.fg,
+    }}>
+      {type}
+    </span>
   )
 }
 
