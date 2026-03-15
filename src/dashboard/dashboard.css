@@ -1,0 +1,370 @@
+/* ===== Dashboard Button Overrides ===== */
+/* The base .btn is sized for mobile touch targets (56px tall, full width).
+   Inside the dashboard shell we want compact desktop-sized buttons. */
+.dashboard-shell .btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-height: unset;
+  width: auto;
+}
+
+.dashboard-shell .btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ===== Dashboard Desktop Layout ===== */
+
+.dashboard-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--gray-50);
+}
+
+/* --- Topbar --- */
+.dashboard-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+  z-index: 10;
+}
+
+.dashboard-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.dashboard-topbar-logo {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--green-700);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.dashboard-topbar-logo span {
+  color: var(--gray-800);
+}
+
+.dashboard-breadcrumb {
+  font-size: 14px;
+  color: var(--gray-400);
+}
+
+.dashboard-season-select {
+  font-size: 14px;
+  padding: 6px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--gray-700);
+  cursor: pointer;
+}
+
+/* --- Sidebar --- */
+.dashboard-sidebar {
+  background: white;
+  border-right: 1px solid var(--gray-200);
+  padding: 16px 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-section {
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+
+.sidebar-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px 4px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--gray-600);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.sidebar-link:hover {
+  background: var(--green-50);
+  color: var(--green-700);
+}
+
+.sidebar-link.active {
+  background: var(--green-100);
+  color: var(--green-700);
+  font-weight: 600;
+}
+
+.sidebar-link-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--gray-200);
+  margin: 8px 12px;
+}
+
+/* --- Main Content --- */
+.dashboard-main {
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* --- Dashboard Cards --- */
+.dash-card {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.dash-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+/* --- Stats Grid --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  padding: 20px;
+}
+
+.stat-card-label {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+
+.stat-card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.stat-card-sub {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+/* --- Tables --- */
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.dash-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--gray-500);
+  border-bottom: 2px solid var(--gray-200);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dash-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+}
+
+.dash-table tr:hover td {
+  background: var(--green-50);
+}
+
+.dash-table tr {
+  cursor: pointer;
+}
+
+/* --- Status Badge --- */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+}
+
+/* --- Forms --- */
+.dash-form-section {
+  margin-bottom: 24px;
+}
+
+.dash-form-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.dash-form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.dash-form-row > .field {
+  flex: 1;
+}
+
+.dash-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--gray-200);
+  margin-top: 24px;
+}
+
+/* --- Empty State --- */
+.dash-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--gray-400);
+}
+
+.dash-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.dash-empty-text {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+/* --- Map --- */
+.dashboard-map-container {
+  height: calc(100vh - 56px);
+  width: 100%;
+}
+
+.dashboard-map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* --- Activity Timeline --- */
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.activity-dot.scheduled { background: var(--blue-500, #3b82f6); }
+.activity-dot.completed { background: var(--green-600); }
+.activity-dot.overdue { background: var(--red-500); }
+.activity-dot.skipped { background: var(--gray-400); }
+
+.activity-info {
+  flex: 1;
+}
+
+.activity-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.activity-meta {
+  font-size: 13px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+
+/* --- Modal --- */
+.dash-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.dash-modal {
+  background: white;
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 640px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dash-modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 16px;
+}

@@ -7,6 +7,13 @@ import { HomePage } from './pages/HomePage'
 import { SetupPage } from './pages/SetupPage'
 import { RecordPage } from './pages/RecordPage'
 import { ReviewPage } from './pages/ReviewPage'
+import { DashboardLayout } from './dashboard/components/DashboardLayout'
+import { DashboardHomePage } from './dashboard/pages/DashboardHomePage'
+import { MapPage } from './dashboard/pages/MapPage'
+import { TrialsPage } from './dashboard/pages/TrialsPage'
+import { TrialDetailPage } from './dashboard/pages/TrialDetailPage'
+import { ClientsPage } from './dashboard/pages/ClientsPage'
+import { SchedulePage } from './dashboard/pages/SchedulePage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null }
@@ -30,35 +37,51 @@ export function App() {
 
   return (
     <ErrorBoundary>
-      <AuthGate>
-        <div className="container">
-          <Routes>
-            <Route path="/" element={<HomePage {...storage} syncStatus={syncStatus} />} />
-            <Route path="/setup" element={<SetupPage onSave={storage.saveConfig} />} />
-            <Route path="/setup/:id" element={<SetupPage configs={storage.configs} onSave={storage.saveConfig} />} />
-            <Route
-              path="/record/:id"
-              element={
-                <RecordPage
-                  configs={storage.configs}
-                  sessions={storage.sessions}
-                  onSaveSession={storage.saveSession}
-                />
-              }
-            />
-            <Route
-              path="/review/:id/:startedAt"
-              element={
-                <ReviewPage
-                  sessions={storage.sessions}
-                  onDeleteSession={storage.deleteSession}
-                />
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-      </AuthGate>
+      <Routes>
+        {/* Dashboard routes — own layout, no auth gate */}
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<DashboardHomePage />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="trials" element={<TrialsPage />} />
+          <Route path="trials/:id" element={<TrialDetailPage />} />
+          <Route path="clients" element={<ClientsPage />} />
+          <Route path="schedule" element={<SchedulePage />} />
+        </Route>
+
+        {/* Mobile voice-entry routes — existing .container wrapper with auth */}
+        <Route path="/*" element={
+          <AuthGate>
+            <Routes>
+              <Route path="/" element={
+                <div className="container">
+                  <HomePage {...storage} syncStatus={syncStatus} />
+                </div>
+              } />
+              <Route path="/setup" element={
+                <div className="container">
+                  <SetupPage onSave={storage.saveConfig} />
+                </div>
+              } />
+              <Route path="/setup/:id" element={
+                <div className="container">
+                  <SetupPage configs={storage.configs} onSave={storage.saveConfig} />
+                </div>
+              } />
+              <Route path="/record/:id" element={
+                <div className="container">
+                  <RecordPage configs={storage.configs} sessions={storage.sessions} onSaveSession={storage.saveSession} />
+                </div>
+              } />
+              <Route path="/review/:id/:startedAt" element={
+                <div className="container">
+                  <ReviewPage sessions={storage.sessions} onDeleteSession={storage.deleteSession} />
+                </div>
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthGate>
+        } />
+      </Routes>
     </ErrorBoundary>
   )
 }

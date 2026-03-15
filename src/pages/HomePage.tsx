@@ -50,9 +50,14 @@ export function HomePage({ configs, sessions, deleteConfig, syncStatus }: HomePa
         </div>
       )}
 
-      <button className="btn btn-primary" onClick={() => navigate('/setup')} style={{ marginBottom: 24 }}>
-        + New Trial
-      </button>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <button className="btn btn-primary" onClick={() => navigate('/setup')} style={{ flex: 1 }}>
+          + New Trial
+        </button>
+        <button className="btn btn-secondary" onClick={() => navigate('/dashboard')} style={{ flex: 1 }}>
+          Dashboard
+        </button>
+      </div>
 
       {configs.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: 40, color: 'var(--gray-500)' }}>
